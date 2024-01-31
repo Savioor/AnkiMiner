@@ -3,7 +3,7 @@
 # The `miners` file is intended for example files and comlete 'products' made with the readers and writers.
 # No need to include all files as some complete 'products' will not be relevant to all people.
 miners/
-!miners/cmd_miner.py
+~miners/cmd_miner.py
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
