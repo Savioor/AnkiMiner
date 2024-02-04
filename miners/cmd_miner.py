@@ -3,7 +3,7 @@ from tkinter.filedialog import askopenfilename
 from typing import Optional
 
 from reader.ichi_reader import IchiReader
-from reader.subtitle_reader import AssReader, GenericReader, SubtitleEvent, align
+from reader.subtitle_reader import AssReader, GenericReader, SubtitleEvent, align, MasterReader
 from reader.video_reader import VideoReader
 from writer.ankiwriter import AnkiWriter
 
@@ -95,14 +95,14 @@ if __name__ == "__main__":
     print("Please pick a video file ... ")
     vid_file = askopenfilename()
     vid_reader = VideoReader(vid_file)
-    print("Please pick an English sub file (only .ass supported) ... ")
+    print("Please pick an English sub file (only .ass/.srt supported) ... ")
     sub_file = askopenfilename()
-    sub_reader_eng = AssReader(sub_file)
-    print("Please pick an Japanese sub file (only .ass supported) ... ")
+    sub_reader_eng = MasterReader(sub_file)
+    print("Please pick an Japanese sub file (only .ass/.srt supported) ... ")
     sub_file = askopenfilename()
-    sub_reader_jp = AssReader(sub_file)
+    sub_reader_jp = MasterReader(sub_file)
     ichi_reader = IchiReader()
-    writer = AnkiWriter(r"C:\Users\Alexey\AppData\Roaming\Anki2\User 1\collection.anki2",
+    writer = AnkiWriter(r"C:\Users\Alexey\AppData\Roaming\Anki2\Main\collection.anki2",
                         r"My Mined Cards")
     print("All ready!")
 

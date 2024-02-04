@@ -227,7 +227,7 @@ class AnkiWriter:
 
 
 if __name__ == "__main__":
-    writer = AnkiWriter(r"C:\Users\Alexey\AppData\Roaming\Anki2\User 1\collection.anki2",
+    writer = AnkiWriter(r"C:\Users\Alexey\AppData\Roaming\Anki2\Main\collection.anki2",
                         r"Tae Kim's Grammar Guide Exercises and Flashcards")
 
     for d in writer._notes:

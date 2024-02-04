@@ -1,6 +1,8 @@
 import os
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+from utils import parse_timestamp
 
 
 def timestamp_to_str(stamp: float) -> str:
@@ -42,11 +44,68 @@ class GenericReader:
         if os.path.splitext(sub_file)[1] not in self.get_allowed_extensions():
             raise ValueError(f"file type is {os.path.splitext(sub_file)[1]} and not allowed type")
 
-    def get_allowed_extensions(self) -> List[str]:
+    @staticmethod
+    def get_allowed_extensions() -> List[str]:
         raise RuntimeError("Not Implemented")
 
     def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
         raise RuntimeError("Not Implemented")
+
+
+class SrtReader(GenericReader):
+
+    def __init__(self, sub_file: str):
+        super().__init__(sub_file)
+
+        self.events: List[SubtitleEvent] = []
+
+        with open(sub_file, "r", encoding='utf-8') as f:
+            lines = f.read().splitlines()
+
+        while len(lines) != 0:
+            lines, to_add = self.parse_sub(lines, len(self.events))
+            self.events.append(to_add)
+
+    @staticmethod
+    def parse_sub(lines: List[str], prev_index: int) -> Tuple[List[str], SubtitleEvent]:
+        if len(lines) < 3:
+            raise RuntimeError("Not enough lines for subtitle line")
+
+        # ind = lines[0].strip()
+        # print(ind[0], len(ind))
+        # assert ind.isnumeric(), "Index wasn't numeric"
+        # ind = int(ind)
+        # assert ind == prev_index + 1, "Missed an index"
+
+        start, arrow, end = lines[1].partition("-->")
+        assert arrow == "-->", "Time range has no end time"
+        start_t = SrtReader.parse_srt_timestamp(start.strip())
+        end_t = SrtReader.parse_srt_timestamp(end.strip())
+        assert end_t >= start_t, "end time was before start time"
+
+        line_count = 0
+        total_sub = ""
+        for line in lines[2:]:
+            line = line.strip()
+            if len(line) == 0:
+                break
+            line_count += 1
+            if len(total_sub) != 0:
+                total_sub += "\n"
+            total_sub += line
+
+        return lines[3 + line_count:], SubtitleEvent(start_t, end_t, total_sub)
+
+    @staticmethod
+    def parse_srt_timestamp(stamp: str):
+        return parse_timestamp(stamp, "%h:%m:%s,%M")
+
+    @staticmethod
+    def get_allowed_extensions() -> List[str]:
+        return [".srt"]
+
+    def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
+        return list(filter(lambda e: e.is_within(timestamp), self.events))
 
 
 class AssReader(GenericReader):
@@ -137,27 +196,7 @@ class AssReader(GenericReader):
 
     @staticmethod
     def parse_ass_timestamp(stamp: str):
-        splat = stamp.split(":")
-        if len(splat) != 3:
-            raise RuntimeError(f"String {stamp} given wasn't ass timestamp")
-
-        seconds, dot, hundrenths = splat[-1].partition(".")
-
-        if (len(splat[0]) != 1 or len(splat[1]) != 2
-                or len(seconds) != 2 or len(hundrenths) != 2):
-            raise RuntimeError(f"String {stamp} given wasn't ass timestamp")
-
-        for elem in splat[:-1]:
-            if not elem.isnumeric():
-                raise ValueError(f"{elem} isn't numeric")
-
-        if not (seconds.isnumeric() and hundrenths.isnumeric()):
-            raise ValueError(f"{splat[-1]} isn't numeric")
-
-        hours = int(splat[0])
-        minutes = int(splat[1])
-
-        return 60 * 60 * hours + 60 * minutes + int(seconds) + int(hundrenths) / 100
+        return parse_timestamp(stamp, "%h:%m:%s.%C")
 
     @staticmethod
     def get_header_value(line: str) -> Optional[str]:
@@ -170,11 +209,38 @@ class AssReader(GenericReader):
     def is_header(line: str):
         return AssReader.get_header_value(line) is not None
 
-    def get_allowed_extensions(self) -> List[str]:
+    @staticmethod
+    def get_allowed_extensions() -> List[str]:
         return [".ass"]
 
 
 if __name__ == "__main__":
-    sub_file = r"C:\Users\Alexey\Downloads\[Kamigami - Fixed Timing] Shirokuma Cafe 1-50 subs(1)\[Kamigami - Fixed Timing] Shirokuma Cafe - 01 [1280x720 x264 AAC Sub(GB,BIG5,JP)_track5_und.ass"
-    reader = AssReader(sub_file)
-    print(reader.get_all_lines_and_time_ranges(7 * 60 + 54))
+    sub_file = r"C:\Users\Alexey\Downloads\My_Neighbor_Totoro_(1988)_[1080p,BluRay,x264,flac]_-_THORA v2 - JP.srt"
+    reader = SrtReader(sub_file)
+    print(reader.events)
+    print(reader.get_all_lines_and_time_ranges(11.5))
+
+
+class MasterReader(GenericReader):
+    _all_readers = (SrtReader, AssReader)
+
+    def __init__(self, sub_file: str):
+        super().__init__(sub_file)
+        ext = os.path.splitext(sub_file)[1]
+        self.slave = None
+        for reader in self._all_readers:
+            if ext in reader.get_allowed_extensions():
+                self.slave = reader(sub_file)
+                break
+        if self.slave is None:
+            raise RuntimeError("This is not supposed to happen....")
+
+    @staticmethod
+    def get_allowed_extensions() -> List[str]:
+        rt = []
+        for r in MasterReader._all_readers:
+            rt += r.get_allowed_extensions()
+        return rt
+
+    def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
+        return self.slave.get_all_lines_and_time_ranges(timestamp)

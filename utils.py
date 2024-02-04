@@ -1,7 +1,7 @@
 import hashlib
 import pathlib
 import random
-from typing import Union, Dict, List, Any
+from typing import Union, Dict, List, Any, Tuple
 
 number = Union[float, int]
 json_value = Union[number, str, bool, List, Dict, None]
@@ -36,3 +36,72 @@ def generate_random_file_name(location: pathlib.Path,
             continue
         return location.joinpath(curr_try + extension)
     raise RuntimeError(f"Tried {max_tries} names of length {char_options} and couldn't find any non taken names")
+
+
+class _Marker:
+
+    def __init__(self,
+                 char_amount: int,
+                 base_value: float,
+                 strict: bool = True):
+        assert char_amount > 0
+        assert base_value > 0
+        self.length = char_amount
+        self.base = base_value
+        self.strict = strict
+
+    def parse(self, source: str) -> Tuple[str, float]:
+        substr = ""
+        for c in source:
+            if len(substr) == self.length:
+                break
+            if not c.isnumeric():
+                break
+            substr += c
+
+        if len(substr) != self.length and self.strict:
+            raise ValueError(f"{source} is an invalid stamp")
+
+        return source[len(substr):], int(substr) * self.base
+
+
+_formats = {
+    "M": _Marker(3, 0.001, True),
+    "C": _Marker(2, 0.01, True),
+    "s": _Marker(2, 1.0, True),
+    "m": _Marker(2, 60.0, False),
+    "h": _Marker(2, 60.0 * 60.0, False)
+}
+
+
+def parse_timestamp(stamp: str, fmt: str) -> float:
+    curr = stamp
+    curr_f = fmt
+    total = 0
+    while len(curr) != 0:
+        if len(curr_f) == 0:
+            raise RuntimeError(f"Can't parse {stamp} for format {fmt}")
+
+        if curr_f[0] == '%':
+
+            if len(curr_f) <= 1:
+                raise RuntimeError(f"Can't parse {stamp} for format {fmt}")
+            curr, to_add = _formats[curr_f[1]].parse(curr)
+            total += to_add
+            curr_f = curr_f[2:]
+
+        else:
+            if curr[0] != curr_f[0]:
+                raise RuntimeError(f"Can't parse {stamp} for format {fmt}")
+
+            curr = curr[1:]
+            curr_f = curr_f[1:]
+
+    if len(curr_f) != 0:
+        raise RuntimeError(f"Can't parse {stamp} for format {fmt}")
+
+    return total
+
+
+if __name__ == "__main__":
+    print(parse_timestamp("12:42.11", "%m:%s.%Msdfsdf"))
