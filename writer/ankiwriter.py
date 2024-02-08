@@ -15,10 +15,11 @@ _global_collections_loaded = {}
 
 
 class AnkiWriter:
-    FIELDS = 'flds'
+    ANKI_EXTENSION = '.anki2'
+    MODEL_FIELDS_KEY = 'flds'
     DECK_ID = 'id'
     MODEL = 'model'
-    FIELD_NAME = 'name'
+    FIELD_NAME_KEY = 'name'
     DECK_NAME = 'name'
     MODEL_NAME = 'name'
     DECK_PATH_TO_MEDIA_PATH = "collection.media"
@@ -29,20 +30,29 @@ class AnkiWriter:
 
     def __init__(self, deck_path: str,
                  deck: Union[int, str]):
+        """
+
+        :param deck_path: A path to the `collection.anki2` file for the collection which will be edited.
+        :param deck: A name of a deck (as a string) or the id of a deck (as an int) whose cards will be edited.
+            The cards of this deck and more relevant information will be loaded into the object for simpler editing.
+        """
         global _global_collections_loaded
 
         if not os.path.isfile(deck_path):
             raise ValueError(f"no file at path {deck_path}")
-        if os.path.splitext(deck_path)[1] != ".anki2":
-            raise ValueError(f"file type is {os.path.splitext(deck_path)[1]} and not .anki2")
+        if os.path.splitext(deck_path)[1] != self.ANKI_EXTENSION:
+            raise ValueError(f"file type is {os.path.splitext(deck_path)[1]} and not {self.ANKI_EXTENSION}")
 
         self.__deck_path = pathlib.Path(deck_path)
 
+        # Can't open the same collection twice, make sure we won't
         if deck_path in _global_collections_loaded:
             self._collection = _global_collections_loaded[deck_path]
         else:
             self._collection: anki.collection.Collection = anki.collection.Collection(deck_path)
             _global_collections_loaded[deck_path] = self._collection
+
+        # Load deck information
         self.deck_name = deck
         self._deck: Optional[anki.decks.DeckDict] = None
         if type(deck) is int:
@@ -59,6 +69,13 @@ class AnkiWriter:
             map(self._collection.get_note, self._collection.find_notes(f"\"deck:{self._deck['name']}\"")))
 
     def get_model(self, name_or_id: Union[str, int]) -> NotetypeDict:
+        """
+
+        :param name_or_id: The name (str) or the id (int) of the desired model to get.
+        :return: The model as a `NotetypeDict`, as returned by the Anki python library. This is just a python dictionary
+            that has information about the model. Note that this object can't edited (or rather, changes will not be
+            reflected in the model).
+        """
         if type(name_or_id) not in [str, int]:
             raise TypeError(f"name_or_id was {type(name_or_id)} expected int or str")
         if type(name_or_id) is int:
@@ -72,22 +89,35 @@ class AnkiWriter:
 
     @staticmethod
     def model_to_flds_list(model: NotetypeDict) -> List[str]:
-        if AnkiWriter.FIELDS not in model or type(model[AnkiWriter.FIELDS]) is not list:
-            raise RuntimeError(f"model didn't include {AnkiWriter.FIELDS} field or type wasn't list")
+        """
+        This is a helper function, to extract data from a dict representing a model
+        :param model: A dictionary representing an Anki model
+        :return: A list of all the field names for the given model
+        """
+        if AnkiWriter.MODEL_FIELDS_KEY not in model or type(model[AnkiWriter.MODEL_FIELDS_KEY]) is not list:
+            raise RuntimeError(f"model didn't include {AnkiWriter.MODEL_FIELDS_KEY} field or type wasn't list")
 
-        fields = model[AnkiWriter.FIELDS]
+        fields = model[AnkiWriter.MODEL_FIELDS_KEY]
         ret = []
         for field in fields:
-            if type(field) is not dict or AnkiWriter.FIELD_NAME not in field or type(
-                    field[AnkiWriter.FIELD_NAME]) is not str:
+            if type(field) is not dict or AnkiWriter.FIELD_NAME_KEY not in field or type(
+                    field[AnkiWriter.FIELD_NAME_KEY]) is not str:
                 raise RuntimeError(f"Invalid field {field} encountered")
-            ret.append(field[AnkiWriter.FIELD_NAME])
+            ret.append(field[AnkiWriter.FIELD_NAME_KEY])
         if len(set(ret)) != len(ret):
-            raise RuntimeError("fields with the same name found")
+            raise RuntimeError("Fields with the same name found")
 
         return ret
 
-    def add_media_file(self, file_name: str, collection_data_path: Optional[str] = None):
+    def add_media_file(self, file_name: str, collection_data_path: Optional[str] = None) -> pathlib.Path:
+        """
+        Adds the file at the given path into the media folder of the collection. If the file is already in the
+        collection it is not added again.
+        :param file_name: The location of the file to add
+        :param collection_data_path: The location of the data files for the collection. When None is passed, the
+            path of the data folder is interpolated from the path of the collection.
+        :return: A Path object pointing to the new/existing file.
+        """
         if collection_data_path is None:
             collection_data_path = self.__deck_path.parent.joinpath(AnkiWriter.DECK_PATH_TO_MEDIA_PATH)
         else:

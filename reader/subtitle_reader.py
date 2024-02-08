@@ -214,25 +214,18 @@ class AssReader(GenericReader):
         return [".ass"]
 
 
-if __name__ == "__main__":
-    sub_file = r"C:\Users\Alexey\Downloads\My_Neighbor_Totoro_(1988)_[1080p,BluRay,x264,flac]_-_THORA v2 - JP.srt"
-    reader = SrtReader(sub_file)
-    print(reader.events)
-    print(reader.get_all_lines_and_time_ranges(11.5))
-
-
 class MasterReader(GenericReader):
     _all_readers = (SrtReader, AssReader)
 
     def __init__(self, sub_file: str):
         super().__init__(sub_file)
         ext = os.path.splitext(sub_file)[1]
-        self.slave = None
+        self.worker = None
         for reader in self._all_readers:
             if ext in reader.get_allowed_extensions():
-                self.slave = reader(sub_file)
+                self.worker = reader(sub_file)
                 break
-        if self.slave is None:
+        if self.worker is None:
             raise RuntimeError("This is not supposed to happen....")
 
     @staticmethod
@@ -243,4 +236,11 @@ class MasterReader(GenericReader):
         return rt
 
     def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
-        return self.slave.get_all_lines_and_time_ranges(timestamp)
+        return self.worker.get_all_lines_and_time_ranges(timestamp)
+
+
+if __name__ == "__main__":
+    sub_file = r"C:\Users\Alexey\Downloads\My_Neighbor_Totoro_(1988)_[1080p,BluRay,x264,flac]_-_THORA v2 - JP.srt"
+    reader = MasterReader(sub_file)
+    print(reader.worker.events)
+    print(reader.get_all_lines_and_time_ranges(11.5))

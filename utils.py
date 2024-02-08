@@ -35,7 +35,7 @@ def generate_random_file_name(location: pathlib.Path,
         if location.joinpath(curr_try + extension).is_file():
             continue
         return location.joinpath(curr_try + extension)
-    raise RuntimeError(f"Tried {max_tries} names of length {char_options} and couldn't find any non taken names")
+    raise RuntimeError(f"Tried {max_tries} names of length {char_amount} and couldn't find any non taken names")
 
 
 class _Marker:

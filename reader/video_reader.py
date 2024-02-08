@@ -23,7 +23,7 @@ class VideoReader:
 
     def extract_audio(self, sec_start: float, sec_end: float) -> pathlib.Path:
         if sec_start < 0 or sec_start >= sec_end or sec_end > self.vid.duration:
-            raise ValueError(f"Invalid time stamp {sec_end}-{sec_end}")
+            raise ValueError(f"Invalid timestamp {sec_end}-{sec_end}")
         file_name = generate_random_file_name(self.path_to_use, self.AUDIO_OUT)
         self.vid.audio.subclip(sec_start, sec_end).write_audiofile(file_name)
         self.my_files.append(file_name)

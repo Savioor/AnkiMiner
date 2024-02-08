@@ -5,28 +5,14 @@ from typing import Optional
 from reader.ichi_reader import IchiReader
 from reader.subtitle_reader import AssReader, GenericReader, SubtitleEvent, align, MasterReader
 from reader.video_reader import VideoReader
+from utils import parse_timestamp
 from writer.ankiwriter import AnkiWriter
 
 Tk().withdraw()
 
 
 def read_timestamp(stamp: str) -> float:
-    minute, colon, second = stamp.partition(":")
-    if colon != ":":
-        raise RuntimeError("no second int timestamp")
-    if not minute.isnumeric():
-        raise RuntimeError("minutes not numeric")
-    if len(second) != 5:
-        raise RuntimeError("second element isn't 5 long")
-    sec, dot, hundrenths = second.partition(".")
-    if dot != ".":
-        raise RuntimeError("no hundrenths found")
-    if not (sec.isnumeric() and hundrenths.isnumeric()):
-        raise RuntimeError("got non numeric value in seconds")
-    if len(sec) != 2:
-        raise RuntimeError("seconds not two chars long")
-
-    return int(minute) * 60.0 + int(sec) + int(hundrenths) / 100.0
+    return parse_timestamp(stamp, "%m:%s.%C")
 
 
 def sub_chooser(sub_reader: GenericReader, timestamp: float, max_to_print: int = 10,
