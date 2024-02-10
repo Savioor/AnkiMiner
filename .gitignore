@@ -5,6 +5,10 @@
 miners/*
 !miners/cmd_miner.py
 
+# config files are personal, make sure to keep examples though for ease of use
+*.toml
+!example.toml
+
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
 # Byte-compiled / optimized / DLL files
