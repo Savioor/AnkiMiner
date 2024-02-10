@@ -1,0 +1,6 @@
+# Replace with the path to your collection, Should be similar to the example below
+collection = "C:\\Users\\Alexey\\AppData\\Roaming\\Anki2\\Main\\collection.anki2"
+# The name of the deck you wish to mine cards into
+main_deck = "My Mined Cards"
+# The name of the model you use for the cards in your deck
+main_model = "Mined From Anime"

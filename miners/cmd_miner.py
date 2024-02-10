@@ -2,6 +2,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from typing import Optional
 
+from config import MAIN_CFG
 from reader.ichi_reader import IchiReader
 from reader.subtitle_reader import AssReader, GenericReader, SubtitleEvent, align, MasterReader
 from reader.video_reader import VideoReader
@@ -88,8 +89,8 @@ if __name__ == "__main__":
     sub_file = askopenfilename()
     sub_reader_jp = MasterReader(sub_file)
     ichi_reader = IchiReader()
-    writer = AnkiWriter(r"C:\Users\Alexey\AppData\Roaming\Anki2\Main\collection.anki2",
-                        r"My Mined Cards")
+    writer = AnkiWriter(MAIN_CFG["collection"],
+                        MAIN_CFG["main_deck"])
     print("All ready!")
 
     mined_this_session = 0
@@ -145,7 +146,7 @@ if __name__ == "__main__":
             if "confirm".startswith(confirmation.lower()) and len(confirmation) != 0:
                 writer.json_to_note(
                     {
-                        "model": "Mined From Anime",
+                        "model": MAIN_CFG["main_model"],
                         "Target": jp_word,
                         "Screenshot": str(image),
                         "Target-Eng": eng_translation,
