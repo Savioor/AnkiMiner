@@ -2,3 +2,6 @@ anki~=23.12
 requests~=2.31.0
 moviepy~=1.0.3
 toml~=0.10.2
+flask~=3.0.0
+tqdm~=4.66.1
+jamdict~=0.1a11.post2
