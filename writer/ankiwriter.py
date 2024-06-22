@@ -175,7 +175,7 @@ class AnkiWriter:
                 raise RuntimeError(f"{field} not in input json")
         for key in input_json.keys():
             if key not in fields:
-                raise RuntimeError(f"{key} from json not a valid field")
+                raise RuntimeError(f"{key} from json not a valid field. Valid fields are {fields}")
         note = anki.notes.Note(self._collection, model)
 
         for key in input_json.keys():

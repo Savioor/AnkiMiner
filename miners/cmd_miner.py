@@ -99,10 +99,14 @@ if __name__ == "__main__":
         try:
             cmd = input("Enter timestamp (mm:ss.ss) or '[q]uit' >>> ")
             if 'quit'.startswith(cmd.lower()) and len(cmd) != 0:
-                print("Thank you for using the cmd miner :)")
-                print(f"Mined {mined_this_session} cards this session!")
-                vid_reader.clear_everything()
-                exit(0)
+                confirmation = input("To confirm exiting type '[e]xit >>> ")
+                if 'exit'.startswith(confirmation.lower()):
+                    print("Thank you for using the cmd miner :)")
+                    print(f"Mined {mined_this_session} cards this session!")
+                    vid_reader.clear_everything()
+                    exit(0)
+                else:
+                    continue
             timestamp = read_timestamp(cmd)
 
             jp_sub = sub_chooser(sub_reader_jp, timestamp)
@@ -118,47 +122,71 @@ if __name__ == "__main__":
             if len(eng_sub) == 0:
                 raise RuntimeError("No translation chosen")
 
-            jp_word = input("Choose target word >>> ")
+            jp_word = input("Choose target word or [s]entence to mine a sentence >>> ")
             if len(jp_word) == 0:
                 raise RuntimeError("No word chosen")
 
-            jp_spelling = input("Enter target word spelling >>> ")
-            if len(jp_spelling) == 0:
-                raise RuntimeError("No spelling provided")
-
-            eng_translation = input("Enter translation of target >>> ")
-            if len(eng_translation) == 0:
-                raise RuntimeError("No translation given")
-
-            furigana = ichi_reader.to_furigana(jp_sub.text)
             image = vid_reader.extract_image(timestamp)
             audio = vid_reader.extract_audio(jp_sub.t0, jp_sub.t1)
+            furigana = ichi_reader.to_furigana(jp_sub.text)
 
-            print("Ready to create card!")
-            print(f"target - {jp_word}")
-            print(f"pronunciation - {jp_spelling}")
-            print(f"target English - {eng_translation}")
-            print(f"furigana - {furigana}")
-            print(f"english sentence - {eng_sub}")
+            if 'sentence'.startswith(jp_word.lower()):
 
-            confirmation = input("[c]onfirm? >>> ")
+                print("Ready to create card!")
+                print(f"furigana - {furigana}")
+                print(f"english sentence - {eng_sub}")
 
-            if "confirm".startswith(confirmation.lower()) and len(confirmation) != 0:
-                writer.json_to_note(
-                    {
-                        "model": MAIN_CFG["main_model"],
-                        "Target": jp_word,
-                        "Screenshot": str(image),
-                        "Target-Eng": eng_translation,
-                        "Line-English": eng_sub,
-                        "Target-Spelling": jp_spelling,
-                        "Audio": str(audio),
-                        "Line-Furigana": furigana
-                    }, marked_as_file=["Audio", "Screenshot"])
-                print("note written!")
-                mined_this_session += 1
+                confirmation = input("[c]onfirm? >>> ")
+
+                if "confirm".startswith(confirmation.lower()) and len(confirmation) != 0:
+                    writer.json_to_note(
+                        {
+                            "model": MAIN_CFG["sentence_model"],
+                            "Line": jp_sub.text,
+                            "Screenshot": str(image),
+                            "Line-English": eng_sub,
+                            "Audio": str(audio),
+                            "Line-Furigana": furigana
+                        }, marked_as_file=["Audio", "Screenshot"])
+                    print("note written!")
+                    mined_this_session += 1
+                else:
+                    print("operation cancelled")
+
             else:
-                print("operation cancelled")
+                jp_spelling = input("Enter target word spelling >>> ")
+                if len(jp_spelling) == 0:
+                    raise RuntimeError("No spelling provided")
+
+                eng_translation = input("Enter translation of target >>> ")
+                if len(eng_translation) == 0:
+                    raise RuntimeError("No translation given")
+
+                print("Ready to create card!")
+                print(f"target - {jp_word}")
+                print(f"pronunciation - {jp_spelling}")
+                print(f"target English - {eng_translation}")
+                print(f"furigana - {furigana}")
+                print(f"english sentence - {eng_sub}")
+
+                confirmation = input("[c]onfirm? >>> ")
+
+                if "confirm".startswith(confirmation.lower()) and len(confirmation) != 0:
+                    writer.json_to_note(
+                        {
+                            "model": MAIN_CFG["main_model"],
+                            "Target": jp_word,
+                            "Screenshot": str(image),
+                            "Target-Eng": eng_translation,
+                            "Line-English": eng_sub,
+                            "Target-Spelling": jp_spelling,
+                            "Audio": str(audio),
+                            "Line-Furigana": furigana
+                        }, marked_as_file=["Audio", "Screenshot"])
+                    print("note written!")
+                    mined_this_session += 1
+                else:
+                    print("operation cancelled")
 
             vid_reader.clear_everything()
 

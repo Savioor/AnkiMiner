@@ -4,3 +4,5 @@ collection = "C:\\Users\\Alexey\\AppData\\Roaming\\Anki2\\Main\\collection.anki2
 main_deck = "My Mined Cards"
 # The name of the model you use for the cards in your deck
 main_model = "Mined From Anime"
+# model for sentence cards
+sentence_model = "Mined From Anime Sentence"
