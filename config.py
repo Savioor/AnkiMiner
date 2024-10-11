@@ -7,6 +7,9 @@ class __Config:
         with open(path, "r") as f:
             self.config = toml.load(f)
 
+    def __getattr__(self, item):
+        return self[item]
+
     def __getitem__(self, item):
         return self.config[item]
 

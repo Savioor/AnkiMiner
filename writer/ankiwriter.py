@@ -224,9 +224,51 @@ class AnkiWriter:
 
         return full_fp
 
+    def update_note_values_via_json(self, note: anki.notes.Note,
+                                    input_json: json_t,
+                                    auto_handle_files: bool = True,
+                                    marked_as_file: List[str] = None,
+                                    marked_as_not_files: List[str] = None,
+                                    all_non_file: bool = False):
+        target_model = note.note_type()[self.MODEL_NAME]
+        if target_model != input_json[self.MODEL]:
+            raise RuntimeError(
+                f"Overwriting json is of model {input_json[self.MODEL]} but note of model {target_model}")
+
+        input_json.pop(self.MODEL)
+
+        if marked_as_file is None:
+            marked_as_file = []
+        if marked_as_not_files is None:
+            marked_as_not_files = []
+
+        if all_non_file:
+            assert len(marked_as_file) == 0
+            assert len(marked_as_not_files) == 0
+
+        for field in marked_as_file:
+            if field in marked_as_not_files:
+                raise RuntimeError(f"{field} was marked as both file and not file")
+
+        for key, value in input_json.items():
+            if ((auto_handle_files or (key in marked_as_file))
+                    and os.path.isfile(value) and key not in marked_as_not_files) and not all_non_file:
+                self.handle_file_field(note, key, value)
+            else:
+                if key in marked_as_file and not all_non_file:
+                    raise RuntimeError(f"{key} should be file but wasn't")
+                note[key] = value
+
+        cards = note.cards()
+        for card in cards:
+            self._collection.update_card(card)
+
+        self._collection.update_note(note)
+
     def export_note_into_json(self, note: anki.notes.Note,
                               marked_as_file: List[str] = None,
-                              marked_as_not_files: List[str] = None) -> json_t:
+                              marked_as_not_files: List[str] = None,
+                              all_non_files: bool=False) -> json_t:
         rt_json = {self.MODEL: note.note_type()[self.MODEL_NAME]}
 
         if marked_as_file is None:
@@ -234,13 +276,17 @@ class AnkiWriter:
         if marked_as_not_files is None:
             marked_as_not_files = []
 
+        if all_non_files:
+            assert len(marked_as_file) == len(marked_as_not_files)
+            assert len(marked_as_file) == 0
+
         for field in marked_as_file:
             if field in marked_as_not_files:
                 raise RuntimeError(f"{field} was marked as both file and not file")
 
         for field in note.keys():
             value = note[field]
-            if field in marked_as_not_files:
+            if field in marked_as_not_files or all_non_files:
                 rt_json[field] = value
                 continue
             as_path = self.handle_file_fields_export(value)
@@ -258,14 +304,23 @@ class AnkiWriter:
 
 if __name__ == "__main__":
     writer = AnkiWriter(r"C:\Users\Alexey\AppData\Roaming\Anki2\Main\collection.anki2",
-                        r"Tae Kim's Grammar Guide Exercises and Flashcards")
+                        r"Core 2k/6k Optimized Japanese Vocabulary (Kanji -> Meaning)")
+    all_notes = writer._notes
+    subject = all_notes[120]
 
-    for d in writer._notes:
-        print(d.values())
-
-    print(writer.export_note_into_json(writer._notes[-1],
-                                       marked_as_file=["Screenshot", "Audio"]))
-
+    cur_js = writer.export_note_into_json(subject,
+                                          marked_as_file=["Vocabulary-Audio",
+                                                          "Sentence-Audio"],
+                                          marked_as_not_files=["Sentence-Image"])
+    print(cur_js)
+    cur_js["Inner-Kanji-1"] = '昨 - yesterday, previous'
+    cur_js["Inner-Kanji-2"] = '日 - day, sun'
+    print(cur_js)
+    writer.update_note_values_via_json(subject, cur_js,
+                                       marked_as_file=["Vocabulary-Audio",
+                                                       "Sentence-Audio"],
+                                       marked_as_not_files=["Sentence-Image"]
+                                       )
     # writer._notes[0].note_type()
     # print(writer._notes[0][writer._notes[0].keys()[0]])
     # json_to_load = {

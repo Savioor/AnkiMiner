@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from utils import parse_timestamp
 
@@ -8,7 +8,13 @@ from utils import parse_timestamp
 def timestamp_to_str(stamp: float) -> str:
     minute = int(stamp / 60)
     seconds = round(stamp - 60 * int(stamp / 60), 2)
-    return str(minute) + ":" + str(seconds)
+
+    seconds = str(seconds)
+    if '.' in seconds and len(seconds.partition('.')[0]) == 1:
+        seconds = '0' + seconds
+    minute = str(minute)
+
+    return minute + ":" + seconds
 
 
 def align(value: str, size: int) -> str:
@@ -19,15 +25,28 @@ def align(value: str, size: int) -> str:
 
 class SubtitleEvent:
 
+    @staticmethod
+    def fix_whitespace(txt: str) -> str:
+        rt = txt.replace('\\n', '\n')
+        rt = rt.replace('\\N', '\n')
+        rt = rt.replace('\\r', '')
+        rt = rt.replace('\\R', '')
+        rt = rt.replace('  ', ' ')
+        return rt
+
     def __init__(self, t0: float, t1: float, text: str):
         if min(t0, t1) < 0 or t1 < t0:
             raise ValueError(f"{t0}-{t1} is invalid as a timestamp")
         self.t0 = t0
         self.t1 = t1
-        self.text = text
+        self.text = self.fix_whitespace(text)
 
     def is_within(self, t: float) -> bool:
         return self.t0 <= t <= self.t1
+
+    def intersects(self, other: "SubtitleEvent"):
+        return any([self.is_within(other.t0), self.is_within(other.t1),
+                    other.is_within(self.t0), other.is_within(self.t1)])
 
     def __str__(self):
         return align(f"{timestamp_to_str(self.t0)} - {timestamp_to_str(self.t1)}", 32) + self.text
@@ -48,7 +67,12 @@ class GenericReader:
     def get_allowed_extensions() -> List[str]:
         raise RuntimeError("Not Implemented")
 
-    def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
+    def get_all_lines_and_time_ranges(self, timestamp: Union[float, SubtitleEvent]) -> List[SubtitleEvent]:
+        if isinstance(timestamp, float):
+            timestamp = SubtitleEvent(t0=timestamp, t1=timestamp, text="")
+        return self._get_all_lines_and_time_ranges(timestamp)
+
+    def _get_all_lines_and_time_ranges(self, timestamp: SubtitleEvent) -> List[SubtitleEvent]:
         raise RuntimeError("Not Implemented")
 
 
@@ -104,8 +128,8 @@ class SrtReader(GenericReader):
     def get_allowed_extensions() -> List[str]:
         return [".srt"]
 
-    def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
-        return list(filter(lambda e: e.is_within(timestamp), self.events))
+    def _get_all_lines_and_time_ranges(self, timestamp: SubtitleEvent) -> List[SubtitleEvent]:
+        return list(filter(lambda e: e.intersects(timestamp), self.events))
 
 
 class AssReader(GenericReader):
@@ -130,7 +154,7 @@ class AssReader(GenericReader):
         self.event_starts = self.get_all_section_starts(self.ASS_EVENTS_HEADER)
         self.event_ends = list(map(lambda i: self.get_section_end_by_start(i), self.event_starts))
 
-    def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
+    def _get_all_lines_and_time_ranges(self, timestamp: SubtitleEvent) -> List[SubtitleEvent]:
         rt_list = []
         for start, end in zip(self.event_starts, self.event_ends):
             if end <= start + 1:
@@ -152,7 +176,7 @@ class AssReader(GenericReader):
                                                    t0,
                                                    t1,
                                                    len(splat))
-                if event is not None and event.is_within(timestamp):
+                if event is not None and event.intersects(timestamp):
                     rt_list.append(event)
 
         return rt_list
@@ -235,7 +259,7 @@ class MasterReader(GenericReader):
             rt += r.get_allowed_extensions()
         return rt
 
-    def get_all_lines_and_time_ranges(self, timestamp: float) -> List[SubtitleEvent]:
+    def _get_all_lines_and_time_ranges(self, timestamp: SubtitleEvent) -> List[SubtitleEvent]:
         return self.worker.get_all_lines_and_time_ranges(timestamp)
 
 
