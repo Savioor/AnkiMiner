@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from typing import Optional, Union
@@ -8,6 +9,7 @@ import config
 from config import MAIN_CFG
 from reader.KanjiInfoReader import KanjiReader
 from reader.ichi_reader import IchiReader
+from reader.ichiran_reader import IchiranReader
 from reader.subtitle_reader import GenericReader, SubtitleEvent, align, MasterReader
 from reader.video_reader import VideoReader
 from utils import parse_timestamp
@@ -145,7 +147,7 @@ if __name__ == "__main__":
     vid_reader = VideoReader(vid_file)
     sub_reader_eng = MasterReader(sub_file_eng)
     sub_reader_jp = MasterReader(sub_file_jp)
-    ichi_reader = IchiReader()
+    ichi_reader = IchiranReader()
     kanji_reader = KanjiReader()
     writer = AnkiWriter(MAIN_CFG["collection"],
                         MAIN_CFG["main_deck"])
@@ -176,6 +178,8 @@ if __name__ == "__main__":
             jp_sub = sub_chooser(sub_reader_jp, timestamp, auto_choice=True)
             if jp_sub is None:
                 raise RuntimeError("No japanese sub chosen")
+
+            print(ichi_reader.to_deconstruction(jp_sub.text))
 
             eng_sub = sub_chooser(sub_reader_eng, jp_sub, auto_choice=False)
             if eng_sub is None:
@@ -218,11 +222,17 @@ if __name__ == "__main__":
                     print("operation cancelled")
 
             else:
-                jp_spelling = input("Enter target word spelling >>> ")
+                try:
+                    jp_spelling = ichi_reader.to_spelling(jp_word)
+                except (RuntimeError, KeyboardInterrupt) as e:
+                    jp_spelling = input("auto spelling failed! input manually >>> ")
                 if len(jp_spelling) == 0:
                     raise RuntimeError("No spelling provided")
 
-                eng_translation = input("Enter translation of target >>> ")
+                try:
+                    eng_translation = ichi_reader.interactive_translation_picker(jp_word)
+                except (RuntimeError, KeyboardInterrupt) as e:
+                    eng_translation = input("Enter translation manually >>> ")
                 if len(eng_translation) == 0:
                     raise RuntimeError("No translation given")
 
@@ -271,3 +281,4 @@ if __name__ == "__main__":
 
         except Exception as e:
             print("ERROR:", e)
+            traceback.format_exc()
