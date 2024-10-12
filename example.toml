@@ -6,3 +6,7 @@ main_deck = "My Mined Cards"
 main_model = "Mined From Anime"
 # model for sentence cards
 sentence_model = "Mined From Anime Sentence"
+# location to save data at
+data_path = "C:\\Users\\Alexey\\AppData\\Local\\AnkiMiner"
+# location of ichiran-cli executable
+ichiran_cli = "C:\\Users\\Alexey\\quicklisp\\local-projects\\ichiran\\ichiran-cli.exe"
