@@ -1,19 +1,51 @@
+/* Define CSS variables for light mode by default */
+:root {
+    --background-color: #f4f4f4;
+    --container-bg-color: white;
+    --text-color: #000000;
+    --input-bg-color: #ffffff;
+    --input-border-color: #ccc;
+    --button-bg-color: #007BFF;
+    --button-hover-bg-color: #0056b3;
+    --textarea-bg-color: #ffffff;
+    --textarea-border-color: #ccc;
+    --box-shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #181818;
+        --container-bg-color: #242424;
+        --text-color: #d0d0d0;
+        --input-bg-color: #333333;
+        --input-border-color: #555555;
+        --button-bg-color: #1c2c75;
+        --button-hover-bg-color: #283ea6;
+        --textarea-bg-color: #333333;
+        --textarea-border-color: #555555;
+        --box-shadow-color: rgba(128, 128, 255, 0.1);
+    }
+}
+
+/* Apply the variables throughout the CSS */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    background-color: var(--background-color);
     margin: 0;
     padding: 0;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     height: 100vh;
+    color: var(--text-color);
 }
 
 .container {
-    background-color: white;
+    background-color: var(--container-bg-color);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px var(--box-shadow-color);
     width: fit-content;
     height: fit-content;
     margin-top: 20px;
@@ -22,10 +54,10 @@ body {
 }
 
 .container_ver {
-    background-color: white;
+    background-color: var(--container-bg-color);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px var(--box-shadow-color);
     width: fit-content;
     height: fit-content;
     margin-top: 20px;
@@ -34,11 +66,14 @@ body {
     text-align: center;
 }
 
-img{
+img {
     max-width: 90vh;
     max-height: 40vh;
 }
 
+h1, h2 {
+    color: var(--text-color);
+}
 
 h1 {
     font-size: 24px;
@@ -66,18 +101,21 @@ h2 {
 label {
     font-size: 14px;
     margin-bottom: 5px;
+    color: var(--text-color);
 }
 
 input, select {
     padding: 8px;
-    border: 1px solid #ccc;
+    background-color: var(--input-bg-color);
+    border: 1px solid var(--input-border-color);
     border-radius: 4px;
     font-size: 14px;
+    color: var(--text-color);
 }
 
 button {
     padding: 10px;
-    background-color: #007BFF;
+    background-color: var(--button-bg-color);
     color: white;
     border: none;
     border-radius: 4px;
@@ -86,7 +124,7 @@ button {
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: var(--button-hover-bg-color);
 }
 
 .decomposition-container {
@@ -98,9 +136,11 @@ textarea {
     width: 400px;
     height: 80%;
     padding: 8px;
-    border: 1px solid #ccc;
+    background-color: var(--textarea-bg-color);
+    border: 1px solid var(--textarea-border-color);
     border-radius: 4px;
     font-size: 12px;
-    resize: none; /* Prevent resizing */
-    overflow-y: scroll; /* Allow vertical scrolling */
+    resize: none;
+    overflow-y: scroll;
+    color: var(--text-color);
 }
