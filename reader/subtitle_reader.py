@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from typing import List, Optional, Tuple, Union
@@ -53,6 +54,16 @@ class SubtitleEvent:
 
     def __repr__(self):
         return self.__str__()
+
+    def to_js(self):
+        return {
+            't0': self.t0,
+            't1': self.t1,
+            'text': self.text
+        }
+
+    def to_js_string(self):
+        return json.dumps(self.to_js())
 
 
 class GenericReader:

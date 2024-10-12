@@ -8,7 +8,6 @@ from typing import Optional, Union
 import config
 from config import MAIN_CFG
 from reader.KanjiInfoReader import KanjiReader
-from reader.ichi_reader import IchiReader
 from reader.ichiran_reader import IchiranReader
 from reader.subtitle_reader import GenericReader, SubtitleEvent, align, MasterReader
 from reader.video_reader import VideoReader

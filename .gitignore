@@ -4,6 +4,8 @@
 # No need to include all files as some complete 'products' will not be relevant to all people.
 miners/*
 !miners/cmd_miner.py
+!miners/flask_miner
+miners/flask_miner/static/mined/*
 
 # config files are personal, make sure to keep examples though for ease of use
 *.toml

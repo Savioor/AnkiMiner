@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Select Subtitles</title>
+    <script>
+        async function updateDecomposition() {
+            const jpSub = JSON.parse(document.getElementById('jp_sub').value);
+            const decompositionBox = document.getElementById('decompositionBox');
+            const wordlistSelect = document.getElementById('jp_word');
+
+            try {
+                const response = await fetch(`/get_decomposition?jp_sub=${encodeURIComponent(jpSub.text)}`);
+                const data = await response.json();
+                decompositionBox.value = data.decomposition; // Set the value of the text area
+            } catch (error) {
+                console.error("Error fetching decomposition:", error);
+                decompositionBox.value = "Error fetching decomposition.";
+            }
+
+            var i, L = wordlistSelect.options.length - 1;
+            for(i = L; i >= 0; i--) {
+                wordlistSelect.options.remove(i);
+            }
+
+            try {
+                const response = await fetch(`/get_wordlist?jp_sub=${encodeURIComponent(jpSub.text)}`);
+                const data = await response.json();
+
+                for (i = 0; i < data.length; i++) {
+                    var opt = document.createElement('option');
+                    opt.innerHTML = data[i].reading;
+                    opt.value = JSON.stringify(data[i]);
+                    wordlistSelect.appendChild(opt);
+                }
+
+                await updateWordDefinitions();
+            } catch (error) {
+                console.error("Error fetching word list:", error);
+            }
+        }
+
+        async function updateWordDefinitions() {
+            const wordlistSelect = document.getElementById('jp_word');
+            const definition = document.getElementById('definition');
+            const selected = wordlistSelect.value;
+
+            var i, L = definition.options.length - 1;
+            for(i = L; i >= 0; i--) {
+                definition.options.remove(i);
+            }
+
+            const definitions = JSON.parse(selected).gloss;
+            for (i = 0; i < definitions.length; i++) {
+                var opt = document.createElement('option');
+                opt.innerHTML = definitions[i].pos + " " + definitions[i].gloss;
+                opt.value = definitions[i].gloss;
+                definition.appendChild(opt);
+            }
+        }
+
+        window.onload = updateDecomposition
+    </script>
+</head>
+<body>
+    <div class="container">
+
+        <form action="{{ url_for('mine_card') }}" method="POST" class="form-group">
+            <h1>Select Subtitles</h1>
+            <input name="timestamp" value="{{ timestamp }}" readonly hidden="hidden">
+            <div class="form-item">
+                <label>Japanese Subtitles</label>
+                <select name="jp_sub" id="jp_sub" onchange="updateDecomposition()">
+                    {% for sub in jp_subs %}
+                        <option value="{{ sub.to_js_string() }}">{{ sub }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-item">
+                <label>English Subtitles</label>
+                <select name="eng_sub" onchange="document.getElementById('eng_sub_custom').value=this.value">
+                    {% for sub in eng_subs %}
+                        <option value="{{ sub.text }}">{{ sub }}</option>
+                    {% endfor %}
+                </select>
+                <label>Custom English Subs:</label>
+                <input type="text" id="eng_sub_custom" name="eng_sub_custom">
+            </div>
+            <div class="form-item">
+                <label>Pick a word to mine:</label>
+                <select name="jp_word" id="jp_word" required onchange="updateWordDefinitions();"></select>
+            </div>
+            <div class="form-item">
+                <label>Pick a definition:</label>
+                <select name="definition" id="definition" required></select>
+            </div>
+
+            <div class="form-item">
+                <button type="submit">Make Card</button>
+            </div>
+            <div class="form-item">
+                <a href="/">back</a>
+            </div>
+        </form>
+
+        <div class="decomposition-container">
+            <h2>Decomposition</h2>
+            <textarea id="decompositionBox" rows="10" readonly></textarea>
+        </div>
+    </div>
+</body>
+</html>

@@ -11,14 +11,17 @@ class VideoReader:
     AUDIO_OUT = ".wav"
     IMAGE_OUT = ".png"
 
-    def __init__(self, video_loc: str):
+    def __init__(self, video_loc: str, save_loc=""):
         if not os.path.isfile(video_loc):
             raise ValueError(f"no file at path {video_loc}")
         if os.path.splitext(video_loc)[1] not in self.ALLOWED_VIDEO_FILES:
             raise ValueError(f"file type is {os.path.splitext(video_loc)[1]} and not allowed video type")
 
         self.vid = movp.VideoFileClip(video_loc)
-        self.path_to_use = pathlib.Path(os.getcwd()).parent
+        if len(save_loc) == "":
+            self.path_to_use = pathlib.Path(os.getcwd()).parent
+        else:
+            self.path_to_use = pathlib.Path(save_loc)
         self.my_files = []
 
     def extract_audio(self, sec_start: float, sec_end: float) -> pathlib.Path:
