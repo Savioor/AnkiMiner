@@ -82,10 +82,11 @@ def deconstruction_json_to_wordlist(decon):
         return deconstruction_json_to_wordlist(decon['components'])
     if 'alternative' in decon:
         return deconstruction_json_to_wordlist(decon['alternative'])
+    rt = []
     if 'conj' in decon and len(decon['conj']) != 0:
-        return deconstruction_json_to_wordlist(decon['conj'])
+        rt += deconstruction_json_to_wordlist(decon['conj'])
     if 'via' in decon:
-        return deconstruction_json_to_wordlist(decon['via'])
+        rt += deconstruction_json_to_wordlist(decon['via'])
     if 'reading' in decon and 'gloss' in decon:
         reading = decon['reading']
         if '【' in reading:
@@ -94,8 +95,8 @@ def deconstruction_json_to_wordlist(decon):
         else:
             text = reading
             kana = text
-        return [{'reading': reading, 'text': text, 'gloss': decon['gloss'], 'kana': kana}]
-    return []
+        rt += [{'reading': reading, 'text': text, 'gloss': decon['gloss'], 'kana': kana}]
+    return rt
 
 
 @app.route('/get_wordlist', methods=['GET'])
@@ -103,6 +104,7 @@ def get_wordlist():
     jp_sub = request.args.get('jp_sub', '')
     try:
         js_deconstruction = json.loads(ichi_reader.run_ichiran_cmd(flags='-f', text=jp_sub))
+        # print(json.dumps(js_deconstruction, indent=1))
         return jsonify(deconstruction_json_to_wordlist(js_deconstruction))
     except RuntimeError as e:
         return jsonify([])
