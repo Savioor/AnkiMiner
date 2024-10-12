@@ -41,6 +41,11 @@ def index():
     return render_template('index.html')
 
 
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return redirect('/')
+
+
 @app.route('/select', methods=['POST'])
 def select_timestamp():
     timestamp = request.form.get('timestamp')
